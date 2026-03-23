@@ -16,6 +16,17 @@ cd ..
 python3 manage.py migrate
 python3 manage.py collectstatic --noinput
 
+# Create root superuser if it doesn't exist
+python3 manage.py shell -c "
+from django.contrib.auth import get_user_model
+U = get_user_model()
+if not U.objects.filter(username='root').exists():
+    U.objects.create_superuser('root', 'root@bestcars.com', 'root123')
+    print('root superuser created')
+else:
+    print('root superuser already exists')
+"
+
 # Restart Django
 pkill -f "manage.py runserver" 2>/dev/null || true
 sleep 1

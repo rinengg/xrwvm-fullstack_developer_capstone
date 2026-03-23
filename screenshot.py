@@ -19,8 +19,8 @@ def path(name): return f"{OUT}/{name}"
 BASE_URL = "https://rishikananda-8000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai"
 
 # Set your superuser credentials here
-ADMIN_USER = "rishikananda"
-ADMIN_PASS = "welcome123"
+ADMIN_USER = "root"
+ADMIN_PASS = "root123"
 
 # Test user for login screenshots (will be registered if not exists)
 TEST_USER = "testuser"
@@ -33,9 +33,21 @@ async def setup_car_data(page):
     await page.wait_for_load_state("networkidle")
 
     makes = [
-        {"name": "Toyota", "description": "Japanese car manufacturer"},
-        {"name": "Honda", "description": "Japanese car manufacturer"},
-        {"name": "Ford", "description": "American car manufacturer"},
+        {"name": "Toyota", "description": "Japanese automotive manufacturer", "model": "Corolla", "type": "Sedan"},
+        {"name": "Honda", "description": "Japanese automotive manufacturer", "model": "Civic", "type": "Sedan"},
+        {"name": "Ford", "description": "American automotive manufacturer", "model": "F-150", "type": "Truck"},
+        {"name": "Chevrolet", "description": "American automotive manufacturer", "model": "Silverado", "type": "Truck"},
+        {"name": "BMW", "description": "German luxury automotive manufacturer", "model": "3 Series", "type": "Sedan"},
+        {"name": "Mercedes-Benz", "description": "German luxury automotive manufacturer", "model": "C-Class", "type": "Sedan"},
+        {"name": "Audi", "description": "German luxury automotive manufacturer", "model": "A4", "type": "Sedan"},
+        {"name": "Nissan", "description": "Japanese automotive manufacturer", "model": "Altima", "type": "Sedan"},
+        {"name": "Hyundai", "description": "South Korean automotive manufacturer", "model": "Elantra", "type": "Sedan"},
+        {"name": "Volkswagen", "description": "German automotive manufacturer", "model": "Jetta", "type": "Sedan"},
+        {"name": "Subaru", "description": "Japanese automotive manufacturer", "model": "Outback", "type": "SUV"},
+        {"name": "Kia", "description": "South Korean automotive manufacturer", "model": "Sportage", "type": "SUV"},
+        {"name": "Mazda", "description": "Japanese automotive manufacturer", "model": "CX-5", "type": "SUV"},
+        {"name": "Jeep", "description": "American SUV manufacturer", "model": "Wrangler", "type": "SUV"},
+        {"name": "Tesla", "description": "American electric vehicle manufacturer", "model": "Model 3", "type": "Sedan"},
     ]
 
     for make in makes:
@@ -43,10 +55,9 @@ async def setup_car_data(page):
         await page.wait_for_load_state("networkidle")
         await page.fill("#id_name", make["name"])
         await page.fill("#id_description", make["description"])
-        # Add one car model inline
-        await page.fill("#id_carmodel_set-0-name", f"{make['name']} Corolla" if make['name']=='Toyota' else f"{make['name']} Civic" if make['name']=='Honda' else f"{make['name']} F-150")
+        await page.fill("#id_carmodel_set-0-name", make["model"])
         try:
-            await page.select_option("#id_carmodel_set-0-type", "Sedan")
+            await page.select_option("#id_carmodel_set-0-type", make["type"])
         except Exception:
             pass
         try:
@@ -84,8 +95,6 @@ async def main():
         print("Task 13: Admin logout...")
         await page.goto(f"{BASE_URL}/admin/")
         await page.wait_for_load_state("networkidle")
-        # Screenshot while still logged in (shows the admin panel with user)
-        await page.screenshot(path=path("admin_login.png"))
         # Try different logout selectors for Django 4/5
         try:
             await page.click("form[action*='logout'] button", timeout=5000)
