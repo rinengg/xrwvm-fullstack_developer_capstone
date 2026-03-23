@@ -9,13 +9,18 @@ Usage:
 """
 
 import asyncio
+import os
 from playwright.async_api import async_playwright
 
-BASE_URL = "https://theia-rishikananda-8000.theiadocker-1-labs-prod-theiak8s-3-tor01.proxy.cognitiveclass.ai"
+OUT = "C:/code/rin/fstack/assignments/new-cap/screenshots"
+os.makedirs(OUT, exist_ok=True)
+def path(name): return f"{OUT}/{name}"
+
+BASE_URL = "https://rishikananda-8000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai"
 
 # Set your superuser credentials here
-ADMIN_USER = "admin"
-ADMIN_PASS = "admin"   # <-- change to your superuser password
+ADMIN_USER = "rishikananda"
+ADMIN_PASS = "welcome123"
 
 # Test user for login screenshots (will be registered if not exists)
 TEST_USER = "testuser"
@@ -65,7 +70,7 @@ async def main():
         await page.wait_for_load_state("networkidle")
         await page.fill("#id_username", ADMIN_USER)
         await page.fill("#id_password", ADMIN_PASS)
-        await page.screenshot(path="admin_login.png")
+        await page.screenshot(path=path("admin_login.png"))
         print("  Saved: admin_login.png")
 
         # Submit login
@@ -79,9 +84,19 @@ async def main():
         print("Task 13: Admin logout...")
         await page.goto(f"{BASE_URL}/admin/")
         await page.wait_for_load_state("networkidle")
-        await page.click("a:has-text('Log out')")
+        # Screenshot while still logged in (shows the admin panel with user)
+        await page.screenshot(path=path("admin_login.png"))
+        # Try different logout selectors for Django 4/5
+        try:
+            await page.click("form[action*='logout'] button", timeout=5000)
+        except Exception:
+            try:
+                await page.click("a[href*='logout']", timeout=5000)
+            except Exception:
+                await page.goto(f"{BASE_URL}/admin/logout/")
         await page.wait_for_load_state("networkidle")
-        await page.screenshot(path="admin_logout.png")
+        await page.wait_for_timeout(1000)
+        await page.screenshot(path=path("admin_logout.png"))
         print("  Saved: admin_logout.png")
 
         # ── Task 17: Dealers on home page BEFORE login ───────────────────────
@@ -89,7 +104,7 @@ async def main():
         await page.goto(BASE_URL)
         await page.wait_for_load_state("networkidle")
         await page.wait_for_timeout(3000)
-        await page.screenshot(path="get_dealers.png")
+        await page.screenshot(path=path("get_dealers.png"))
         print("  Saved: get_dealers.png")
 
         # ── Register test user ────────────────────────────────────────────────
@@ -127,7 +142,7 @@ async def main():
         await page.goto(BASE_URL)
         await page.wait_for_load_state("networkidle")
         await page.wait_for_timeout(3000)
-        await page.screenshot(path="get_dealers_loggedin.png")
+        await page.screenshot(path=path("get_dealers_loggedin.png"))
         print("  Saved: get_dealers_loggedin.png")
 
         # ── Task 19: Filter dealers by state ─────────────────────────────────
@@ -144,7 +159,7 @@ async def main():
                 await page.wait_for_timeout(2000)
             except Exception as e:
                 print(f"  State filter: {e}")
-        await page.screenshot(path="dealersbystate.png")
+        await page.screenshot(path=path("dealersbystate.png"))
         print("  Saved: dealersbystate.png")
 
         # ── Task 20: Dealer details with reviews ─────────────────────────────
@@ -152,7 +167,7 @@ async def main():
         await page.goto(f"{BASE_URL}/dealer/2")
         await page.wait_for_load_state("networkidle")
         await page.wait_for_timeout(4000)
-        await page.screenshot(path="dealer_id_reviews.png")
+        await page.screenshot(path=path("dealer_id_reviews.png"))
         print("  Saved: dealer_id_reviews.png")
 
         # ── Task 21: Post review page (before submit) ─────────────────────────
@@ -163,11 +178,13 @@ async def main():
         try:
             await page.fill("textarea#review", "Excellent service and great selection of cars!")
             await page.fill("input[type='date']", "2026-03-23")
-            await page.select_option("select#cars", index=1)
-            await page.fill("input[type='int']", "2022")
+            try:
+                await page.select_option("select#cars", index=1)
+            except Exception:
+                await page.select_option("select#cars", index=0)
         except Exception as e:
             print(f"  Fill review form: {e}")
-        await page.screenshot(path="dealership_review_submission.png")
+        await page.screenshot(path=path("dealership_review_submission.png"))
         print("  Saved: dealership_review_submission.png")
 
         # ── Task 22: Submit review and screenshot ─────────────────────────────
@@ -176,11 +193,11 @@ async def main():
             await page.click("button.postreview")
             await page.wait_for_load_state("networkidle")
             await page.wait_for_timeout(3000)
-            await page.screenshot(path="added_review.png")
+            await page.screenshot(path=path("added_review.png"))
             print("  Saved: added_review.png")
         except Exception as e:
             print(f"  Submit review: {e}")
-            await page.screenshot(path="added_review.png")
+            await page.screenshot(path=path("added_review.png"))
 
         await browser.close()
         print("\nAll screenshots collected!")
