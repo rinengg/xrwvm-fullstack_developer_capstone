@@ -16,6 +16,21 @@ OUT = "C:/code/rin/fstack/assignments/new-cap/screenshots"
 os.makedirs(OUT, exist_ok=True)
 def path(name): return f"{OUT}/{name}"
 
+
+async def add_url_bar(page):
+    """Inject a visible URL bar overlay so screenshots show the endpoint."""
+    url = page.url
+    await page.evaluate(f"""
+        const existing = document.getElementById('_url_bar_overlay');
+        if (existing) existing.remove();
+        const bar = document.createElement('div');
+        bar.id = '_url_bar_overlay';
+        bar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:38px;background:#f1f3f4;border-bottom:2px solid #ccc;z-index:2147483647;display:flex;align-items:center;padding:0 12px;font-family:Arial,sans-serif;font-size:13px;';
+        bar.innerHTML = '<span style="margin-right:8px;color:#666;">&#x1F512;</span><span style="background:white;border:1px solid #ccc;border-radius:16px;padding:5px 16px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333;">{url}</span>';
+        document.documentElement.style.paddingTop = '38px';
+        document.body.insertBefore(bar, document.body.firstChild);
+    """)
+
 BASE_URL = "https://rishikananda-8000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai"
 
 # Set your superuser credentials here
@@ -113,6 +128,7 @@ async def main():
         await page.goto(BASE_URL)
         await page.wait_for_load_state("networkidle")
         await page.wait_for_timeout(3000)
+        await add_url_bar(page)
         await page.screenshot(path=path("get_dealers.png"))
         print("  Saved: get_dealers.png")
 
@@ -151,6 +167,7 @@ async def main():
         await page.goto(BASE_URL)
         await page.wait_for_load_state("networkidle")
         await page.wait_for_timeout(3000)
+        await add_url_bar(page)
         await page.screenshot(path=path("get_dealers_loggedin.png"))
         print("  Saved: get_dealers_loggedin.png")
 
@@ -168,6 +185,7 @@ async def main():
                 await page.wait_for_timeout(2000)
             except Exception as e:
                 print(f"  State filter: {e}")
+        await add_url_bar(page)
         await page.screenshot(path=path("dealersbystate.png"))
         print("  Saved: dealersbystate.png")
 
@@ -175,7 +193,16 @@ async def main():
         print("Task 20: Dealer details with reviews...")
         await page.goto(f"{BASE_URL}/dealer/2")
         await page.wait_for_load_state("networkidle")
-        await page.wait_for_timeout(4000)
+        await page.wait_for_timeout(6000)
+        # Wait until reviews are actually loaded (not just "Loading Reviews....")
+        try:
+            await page.wait_for_function(
+                "!document.body.innerText.includes('Loading Reviews')",
+                timeout=15000
+            )
+        except Exception:
+            pass
+        await add_url_bar(page)
         await page.screenshot(path=path("dealer_id_reviews.png"))
         print("  Saved: dealer_id_reviews.png")
 
@@ -183,16 +210,20 @@ async def main():
         print("Task 21: Post review page...")
         await page.goto(f"{BASE_URL}/postreview/2")
         await page.wait_for_load_state("networkidle")
-        await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(4000)
+        # Dismiss any alerts (validation popups)
+        page.on("dialog", lambda d: asyncio.ensure_future(d.accept()))
         try:
             await page.fill("textarea#review", "Excellent service and great selection of cars!")
             await page.fill("input[type='date']", "2026-03-23")
-            try:
-                await page.select_option("select#cars", index=1)
-            except Exception:
-                await page.select_option("select#cars", index=0)
+            # Select first real car option (not the disabled placeholder at index 0)
+            await page.wait_for_selector("select#cars option:nth-child(2)", timeout=5000)
+            await page.select_option("select#cars", index=1)
+            # Fill car year
+            await page.fill("input[type='int']", "2022")
         except Exception as e:
             print(f"  Fill review form: {e}")
+        await add_url_bar(page)
         await page.screenshot(path=path("dealership_review_submission.png"))
         print("  Saved: dealership_review_submission.png")
 
@@ -200,12 +231,24 @@ async def main():
         print("Task 22: Submit review...")
         try:
             await page.click("button.postreview")
+            # Wait for redirect to dealer page after successful submit
+            await page.wait_for_url(f"**\/dealer\/*", timeout=15000)
             await page.wait_for_load_state("networkidle")
-            await page.wait_for_timeout(3000)
+            await page.wait_for_timeout(5000)
+            # Wait for reviews to load
+            try:
+                await page.wait_for_function(
+                    "!document.body.innerText.includes('Loading Reviews')",
+                    timeout=10000
+                )
+            except Exception:
+                pass
+            await add_url_bar(page)
             await page.screenshot(path=path("added_review.png"))
             print("  Saved: added_review.png")
         except Exception as e:
             print(f"  Submit review: {e}")
+            await add_url_bar(page)
             await page.screenshot(path=path("added_review.png"))
 
         await browser.close()
