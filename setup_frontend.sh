@@ -11,8 +11,9 @@ cd server/frontend
 npm install
 npm run build
 
-# Collect Django static files
+# Run Django migrations and collect static files
 cd ..
+python3 manage.py migrate
 python3 manage.py collectstatic --noinput
 
 # Restart Django
