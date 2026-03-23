@@ -6,7 +6,7 @@ cd /home/project/xrwvm-fullstack_developer_capstone
 # Pull latest changes
 git pull
 
-# Build React frontend
+# Build React frontend (outputs to server/frontend/build/)
 cd server/frontend
 npm install
 npm run build
